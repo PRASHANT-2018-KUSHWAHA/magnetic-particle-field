@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Repulsion Field</title>
+
+    <style>
+        /* ===== Global Styles ===== */
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0f172a, #020617);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        /* ===== Title Overlay ===== */
+
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .info h1 {
+            margin: 0;
+            font-size: 32px;
+            letter-spacing: 2px;
+        }
+
+        .info p {
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* ===== Canvas ===== */
+
+        canvas {
+            display: block;
+        }
+
+        /* ===== Custom Cursor ===== */
+
+        #cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid cyan;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px cyan;
+            z-index: 20;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="info">
+        <h1>Repulsion Field</h1>
+        <p>Physics-inspired magnetic repulsion effect</p>
+    </div>
+
+    <div id="cursor"></div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        let mouse = { x: null, y: null };
+
+        const cursor = document.getElementById("cursor");
+
+        // Track mouse
+        window.addEventListener("mousemove", function (e) {
+            mouse.x = e.x;
+            mouse.y = e.y;
+
+            cursor.style.left = e.x + "px";
+            cursor.style.top = e.y + "px";
+        });
+
+        // Particle Class
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 2 + 1.5;
+                this.baseX = x;
+                this.baseY = y;
+                this.density = Math.random() * 25 + 10;
+            }
+
+            draw() {
+                ctx.fillStyle = "cyan";
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            update() {
+                let dx = this.x - mouse.x;
+                let dy = this.y - mouse.y;
+
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                let maxDistance = 120;
+
+                if (distance < maxDistance) {
+
+                    let force = (maxDistance - distance) / maxDistance;
+
+                    let directionX = dx / distance;
+                    let directionY = dy / distance;
+
+                    this.x += directionX * force * this.density;
+                    this.y += directionY * force * this.density;
+
+                } else {
+                    this.x += (this.baseX - this.x) * 0.05;
+                    this.y += (this.baseY - this.y) * 0.05;
+                }
+            }
+        }
+
+        // Create grid of particles
+        function init() {
+            particles = [];
+
+            let gap = 28;
+
+            for (let y = gap; y < canvas.height; y += gap) {
+                for (let x = gap; x < canvas.width; x += gap) {
+                    particles.push(new Particle(x, y));
+                }
+            }
+        }
+
+        init();
+
+        // Draw lines between nearby particles
+        function connect() {
+            for (let a = 0; a < particles.length; a++) {
+                for (let b = a; b < particles.length; b++) {
+
+                    let dx = particles[a].x - particles[b].x;
+                    let dy = particles[a].y - particles[b].y;
+
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 60) {
+                        ctx.strokeStyle = "rgba(0,255,255,0.1)";
+                        ctx.lineWidth = 1;
+
+                        ctx.beginPath();
+                        ctx.moveTo(particles[a].x, particles[a].y);
+                        ctx.lineTo(particles[b].x, particles[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.draw();
+                p.update();
+            });
+
+            connect();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Resize handler
+        window.addEventListener("resize", function () {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+
+    </script>
+
+</body>
+
+</html>
